@@ -38,6 +38,7 @@ public class MagnetometerActivity extends BleServiceBindingActivity {
     private double freqOfTone = 300; // hz
     private double MAX_FREQ = 3000;
     private double MIN_FREQ = 500;
+    private float volume = 1;
 
     private final byte generatedSnd[] = new byte[2 * numSamples];
 
@@ -173,8 +174,9 @@ public class MagnetometerActivity extends BleServiceBindingActivity {
             calibrateValues.add(magneticValues);
         } else {
             float value = (magneticValues[2] - environmentCalibrateValue[2]);
+            float valueVolume = (magneticValues[0] - environmentCalibrateValue[0]);
 
-            setFrequency(value);
+            setFrequency(value, valueVolume);
             
             
             switch (state) {
@@ -243,20 +245,30 @@ public class MagnetometerActivity extends BleServiceBindingActivity {
 
 
 
-    private void setFrequency(float value) {
-        if(value < 0.0001f) {
-            value = 0.0001f;
+    private void setFrequency(float valueFreq, float valueVolume) {
+        if(valueFreq < 0.0001f) {
+            valueFreq = 0.0001f;
         }
-        Log.w("FREQUENCY", "value:" + value);
-        double freq =  Math.sqrt(1/value); // 0.01  0.3r
+        if(valueVolume < 0.001f) {
+            valueVolume = 0.0001f;
+        }
+        Log.w("FREQUENCY", "value:" + valueFreq);
+        double freq =  Math.sqrt(1/valueFreq); // 0.01  0.3r
+        double vol = Math.sqrt(1/valueVolume) * 3;
         Log.w("FREQUENCY", "freq not scaled:" + freq);
+        Log.w("VOLUME", " volume: " + vol);
         freq = -freq * 9000 + 3100;
         Log.w("FREQUENCY", "freq:" + freq);
+        vol = Math.min(vol, 1f);
+        vol = Math.max(vol, 0.5f);
+
 
 //        double freq = 1 / (value * value);
 //        double freq = 300+ value;
         freq = Math.min(MAX_FREQ, freq);
         freq = Math.max(MIN_FREQ, freq);
+        Log.w("VOLUME", " volume final: " + vol);
+        volume = (float) vol;
         freqOfTone = freq;
         audioTrack.pause();
         audioTrack.flush();
@@ -276,7 +288,7 @@ public class MagnetometerActivity extends BleServiceBindingActivity {
         int idx = 0;
         for (final double dVal : sample) {
             // scale to maximum amplitude
-            final short val = (short) ((dVal * 32767));
+            final short val = (short) ((dVal * volume * 32767));
             // in 16 bit wav PCM, first byte is the low order byte
             generatedSnd[idx++] = (byte) (val & 0x00ff);
             generatedSnd[idx++] = (byte) ((val & 0xff00) >>> 8);
