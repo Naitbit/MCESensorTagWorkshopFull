@@ -37,7 +37,7 @@ public class MagnetometerActivity extends BleServiceBindingActivity {
     private final double sample[] = new double[numSamples];
     private double freqOfTone = 300; // hz
     private double MAX_FREQ = 3000;
-    private double MIN_FREQ = 400;
+    private double MIN_FREQ = 500;
 
     private final byte generatedSnd[] = new byte[2 * numSamples];
 
@@ -244,11 +244,13 @@ public class MagnetometerActivity extends BleServiceBindingActivity {
 
 
     private void setFrequency(float value) {
-        if(value== 0) {
-            value = 0.000001f;
+        if(value < 0.0001f) {
+            value = 0.0001f;
         }
-        double freq = Math.sqrt(1/value);
-        freq = freq * 5400 - 400;
+        Log.w("FREQUENCY", "value:" + value);
+        double freq =  Math.sqrt(1/value); // 0.01  0.3r
+        Log.w("FREQUENCY", "freq not scaled:" + freq);
+        freq = -freq * 9000 + 3100;
         Log.w("FREQUENCY", "freq:" + freq);
 
 //        double freq = 1 / (value * value);
